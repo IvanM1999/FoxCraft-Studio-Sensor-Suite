@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoxCraft Studio & Sensor Suite PWA</title>
+    <!-- Dynamic Manifest Data URI for PWA support -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22FoxCraft%20Studio%22%2C%22short_name%22%3A%22FoxCraft%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23FFF8E1%22%2C%22theme_color%22%3A%22%23E65100%22%2C%22icons%22%3A%5B%5D%7D'>
+    <meta name="theme-color" content="#E65100">
+    <!-- Google Fonts: Fredoka -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        foxsand: '#FFF8E1',
+                        foxorange: '#E65100',
+                        foxterracota: '#D84315',
+                        foxbrown: '#3E2723',
+                        foxcream: '#FFFDE7',
+                        foxamber: '#FF8F00',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 50%, #FFCC80 100%);
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        /* Fox ears on container */
+        .fox-container {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fox-ear-left, .fox-ear-right {
+            position: absolute;
+            top: -40px;
+            width: 50px;
+            height: 60px;
+            background: #E65100;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .fox-ear-left {
+            left: 24px;
+            transform: rotate(-18deg);
+        }
+        .fox-ear-right {
+            right: 24px;
+            transform: rotate(18deg);
+        }
+        .fox-ear-inner-left, .fox-ear-inner-right {
+            position: absolute;
+            top: 14px;
+            width: 30px;
+            height: 40px;
+            background: #FFECB3;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .fox-ear-inner-left { left: 10px; }
+        .fox-ear-inner-right { right: 10px; }
+
+        .calc-btn {
+            transition: all 0.12s ease;
+            touch-action: manipulation;
+        }
+        .calc-btn:active {
+            transform: scale(0.92);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FFFDE7;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FFB74D;
+            border-radius: 8px;
+        }
+
+        .calc-view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.25s ease-in-out;
+        }
+        .calc-view.active {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-2 sm:p-5 text-foxbrown">
+
+    <!-- Header / Navigation Bar -->
+    <header class="w-full max-w-2xl flex flex-col sm:flex-row items-center justify-between py-2 px-1 z-20 gap-2">
+        <div class="flex items-center space-x-2.5 bg-white/90 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-sm border border-orange-200">
+            <!-- Reactive Fox SVG Avatar -->
+            <svg id="foxAvatar" class="w-8 h-8 text-foxorange transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L2 9l3 11h14l3-11L12 2zm0 3.2l6.1 4.5-2.2 8H8.1l-2.2-8L12 5.2z"/>
+                <circle cx="9" cy="11" r="1.5"/><circle cx="15" cy="11" r="1.5"/>
+            </svg>
+            <div>
+                <h1 class="font-bold text-sm sm:text-base tracking-wide text-foxbrown leading-tight">FoxCraft Studio</h1>
+                <p class="text-[10px] text-amber-700 font-semibold">Embedded & Hardware Suite</p>
+            </div>
+        </div>
+
+        <!-- Utility Buttons -->
+        <div class="flex items-center space-x-1.5">
+            <button id="audioToggleBtn" title="Ativar/Desativar Som" class="p-2.5 bg-white/90 hover:bg-white rounded-2xl shadow-sm border border-orange-200 transition active:scale-95 flex items-center justify-center">
+                <svg id="soundOnIcon" class="w-4 h-4 text-foxorange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <svg id="soundOffIcon" class="w-4 h-4 text-gray-400 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>
+            </button>
+            <button id="openHistoryBtn" title="Histórico" class="p-2.5 bg-white/90 hover:bg-white rounded-2xl shadow-sm border border-orange-200 transition active:scale-95 flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="w-full max-w-2xl flex overflow-x-auto py-1 px-1 gap-1.5 no-scrollbar z-10">
+        <button onclick="switchTab('battery')" id="tabBtn-battery" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-foxorange text-white shadow-xs flex items-center space-x-1.5">
+            <span>🔋 Baterias Li-Ion</span>
+        </button>
+        <button onclick="switchTab('voltage')" id="tabBtn-voltage" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-white/80 hover:bg-white text-foxbrown border border-orange-200 flex items-center space-x-1.5">
+            <span>⚡ Divisor de Tensão</span>
+        </button>
+        <button onclick="switchTab('adc')" id="tabBtn-adc" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-white/80 hover:bg-white text-foxbrown border border-orange-200 flex items-center space-x-1.5">
+            <span>🎛️ Conversor ADC</span>
+        </button>
+        <button onclick="switchTab('boost')" id="tabBtn-boost" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-white/80 hover:bg-white text-foxbrown border border-orange-200 flex items-center space-x-1.5">
+            <span>📈 Boost Converter</span>
+        </button>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-md my-auto py-2">
+        <div class="fox-container">
+            <div class="fox-ear-left"><div class="fox-ear-inner-left"></div></div>
+            <div class="fox-ear-right"><div class="fox-ear-inner-right"></div></div>
+
+            <div class="bg-foxcream rounded-[2.5rem] shadow-xl border-4 border-orange-200 p-4 sm:p-5 relative overflow-hidden">
+                
+                <!-- VIEW 1: LITHIUM BATTERY LAB -->
+                <div id="view-battery" class="calc-view active space-y-3">
+                    <h3 class="font-bold text-sm text-foxorange flex items-center space-x-1.5">
+                        <span>Autonomia & Bancos de 18650 / LiPo</span>
+                    </h3>
+                    <div class="bg-white/95 p-3.5 rounded-2xl border-2 border-orange-100 shadow-inner space-y-2.5 text-xs">
+                        <div>
+                            <label class="text-[10px] text-gray-500 font-semibold">Capacidade da Célula Individual (mAh)</label>
+                            <input type="number" id="battMah" value="2500" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Série (S - Tensão)</label>
+                                <input type="number" id="battS" value="1" min="1" max="10" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Paralelo (P - Corrente)</label>
+                                <input type="number" id="battP" value="1" min="1" max="20" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-500 font-semibold">Consumo Médio da Carga (mA)</label>
+                            <input type="number" id="battLoad" value="500" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                        </div>
+                        <div class="p-3 bg-orange-50 rounded-xl border border-orange-100 space-y-1 font-mono">
+                            <div class="flex justify-between"><span>Tensão Total:</span> <strong id="resVolt" class="text-foxorange">3.7V</strong></div>
+                            <div class="flex justify-between"><span>Capacidade Total:</span> <strong id="resCap" class="text-foxorange">2500 mAh</strong></div>
+                            <div class="flex justify-between"><span>Autonomia Estimada:</span> <strong id="resTime" class="text-foxorange">5.00 h</strong></div>
+                        </div>
+                        <button onclick="calculateBattery()" class="w-full py-2 bg-foxorange hover:bg-orange-700 text-white font-bold rounded-xl transition shadow-xs">Calcular Pack</button>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: VOLTAGE DIVIDER -->
+                <div id="view-voltage" class="calc-view space-y-3">
+                    <h3 class="font-bold text-sm text-foxorange flex items-center space-x-1.5">
+                        <span>Divisor de Tensão para ADC (ESP32/Arduino)</span>
+                    </h3>
+                    <div class="bg-white/95 p-3.5 rounded-2xl border-2 border-orange-100 shadow-inner space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Tensão de Entrada Vin (V)</label>
+                                <input type="number" id="divVin" value="12" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Tensão Alvo Vout Max (V)</label>
+                                <input type="number" id="divVout" value="3.3" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-500 font-semibold">Resistor R2 Base (Ω)</label>
+                            <input type="number" id="divR2" value="10000" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                        </div>
+                        <div class="p-3 bg-orange-50 rounded-xl border border-orange-100 space-y-1 font-mono">
+                            <div class="flex justify-between"><span>Resistor R1 Necessário:</span> <strong id="resR1" class="text-foxorange">26.36 kΩ</strong></div>
+                            <div class="flex justify-between"><span>Corrente no Circuito:</span> <strong id="resCurr" class="text-foxorange">0.33 mA</strong></div>
+                        </div>
+                        <button onclick="calculateDivider()" class="w-full py-2 bg-foxorange hover:bg-orange-700 text-white font-bold rounded-xl transition shadow-xs">Calcular R1</button>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: ADC CONVERTER -->
+                <div id="view-adc" class="calc-view space-y-3">
+                    <h3 class="font-bold text-sm text-foxorange flex items-center space-x-1.5">
+                        <span>Conversor de Leitura ADC (Bits ➔ Tensão)</span>
+                    </h3>
+                    <div class="bg-white/95 p-3.5 rounded-2xl border-2 border-orange-100 shadow-inner space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Resolução do ADC</label>
+                                <select id="adcRes" class="w-full p-2 rounded-xl border border-orange-200 font-medium text-xs bg-white">
+                                    <option value="8">8-bit (256)</option>
+                                    <option value="10">10-bit (1024)</option>
+                                    <option value="12" selected>12-bit (4096 - ESP32)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Tensão de Referência (V)</label>
+                                <input type="number" id="adcVref" value="3.3" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-500 font-semibold">Valor Lido (Raw Bits)</label>
+                            <input type="number" id="adcRaw" value="2048" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                        </div>
+                        <div class="p-3 bg-orange-50 rounded-xl border border-orange-100 flex justify-between items-center">
+                            <span class="font-semibold text-gray-600">Tensão Calculada:</span>
+                            <span id="adcResult" class="font-mono font-bold text-foxorange text-base">1.65 V</span>
+                        </div>
+                        <button onclick="calculateAdc()" class="w-full py-2 bg-foxorange hover:bg-orange-700 text-white font-bold rounded-xl transition shadow-xs">Converter Bits</button>
+                    </div>
+                </div>
+
+                <!-- VIEW 4: BOOST / BUCK CONVERTER -->
+                <div id="view-boost" class="calc-view space-y-3">
+                    <h3 class="font-bold text-sm text-foxorange flex items-center space-x-1.5">
+                        <span>Eficiência & Corrente em DC-DC</span>
+                    </h3>
+                    <div class="bg-white/95 p-3.5 rounded-2xl border-2 border-orange-100 shadow-inner space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Tensão Entrada (V)</label>
+                                <input type="number" id="dcVin" value="5" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Tensão Saída (V)</label>
+                                <input type="number" id="dcVout" value="12" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Corrente Saída (A)</label>
+                                <input type="number" id="dcIout" value="1" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-500 font-semibold">Eficiência Média (%)</label>
+                                <input type="number" id="dcEff" value="85" class="w-full p-2 rounded-xl border border-orange-200 font-mono text-sm">
+                            </div>
+                        </div>
+                        <div class="p-3 bg-orange-50 rounded-xl border border-orange-100 space-y-1 font-mono">
+                            <div class="flex justify-between"><span>Potência de Saída:</span> <strong id="dcPout" class="text-foxorange">12.00 W</strong></div>
+                            <div class="flex justify-between"><span>Corrente na Entrada:</span> <strong id="dcIin" class="text-foxorange">2.82 A</strong></div>
+                        </div>
+                        <button onclick="calculateDcDc()" class="w-full py-2 bg-foxorange hover:bg-orange-700 text-white font-bold rounded-xl transition shadow-xs">Calcular Conversor</button>
+                    </div>
+                </div>
+
+                <!-- Footer Whiskers -->
+                <div class="mt-4 flex justify-center items-center space-x-1 opacity-60">
+                    <div class="h-0.5 bg-orange-300 w-8 rounded-full"></div>
+                    <svg class="w-4 h-4 text-foxorange" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    <div class="h-0.5 bg-orange-300 w-8 rounded-full"></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity opacity-0">
+        <div class="bg-white rounded-3xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl border-4 border-orange-200 overflow-hidden">
+            <div class="flex items-center justify-between p-4 bg-orange-50 border-b border-orange-200">
+                <h3 class="font-bold text-lg text-foxbrown flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Histórico FoxCraft</span>
+                </h3>
+                <button id="closeHistoryBtn" class="p-2 hover:bg-orange-100 rounded-full transition">
+                    <svg class="w-5 h-5 text-foxbrown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div id="historyList" class="p-4 overflow-y-auto flex-1 space-y-2 font-mono text-xs"></div>
+            <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-between">
+                <button onclick="clearHistory()" class="px-4 py-2 bg-red-100 hover:bg
